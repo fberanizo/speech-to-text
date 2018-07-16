@@ -1,4 +1,4 @@
-<script type="text/x-red" data-template-name="gcloud-speech-to-text">
+<script type="text/x-red" data-template-name="speech-to-text">
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name">
@@ -6,7 +6,7 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType("gcloud-speech-to-text", {
+    RED.nodes.registerType("speech-to-text", {
         category: "google",
         defaults: {
             name: { value: "", required: false }
@@ -17,7 +17,7 @@
         icon: "bridge.png",
         color: "#CFD8DC",
         label: function() {
-            return this.name || "gcloud-speech-to-text";
+            return this.name || "speech-to-text";
         },
         labelStyle: function() {
             return this.name ? "node_label_italic" : "";
