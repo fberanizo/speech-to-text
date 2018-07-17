@@ -69,6 +69,7 @@ class DataHandler extends dojot.DataHandlerBase {
                 default:
                     return callback(new Error("Invalid audio type: " + config.audioType));
             }
+            audio = Buffer.from(audio, "base64");
 
             if (this.streams[config.name] === undefined) {
                 this.streams[config.name] = {stream: null, responses: []};
@@ -81,14 +82,12 @@ class DataHandler extends dojot.DataHandlerBase {
                 });
 
                 const request = {
-                    "audio": {
-                        content: audio,
-                    },
                     "config": {
                         encoding: config.audioEncoding,
                         sampleRateHertz: parseInt(config.sampleRate),
                         languageCode: config.languageCode,
                     },
+                    "singleUtterance": false,
                     "interimResults": false
                 };
 
@@ -101,7 +100,7 @@ class DataHandler extends dojot.DataHandlerBase {
                 });
             }
 
-            this.streams[config.name].stream.write(request);
+            this.streams[config.name].stream.write(audio);
 
             if (this.streams[config.name].responses.length > 0) {
                 // dequeues the response
