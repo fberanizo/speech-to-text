@@ -9,6 +9,7 @@
   "author": "Fabio Lopes",
   "license": "",
   "dependencies": {
-    "@dojot/flow-node": "^1.0.2"
+    "@dojot/flow-node": "^1.0.2",
+    "@google-cloud/speech": "^2.0.0"
   }
 }

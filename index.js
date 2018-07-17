@@ -1,12 +1,14 @@
 "use strict";
 
-var path = require("path");
-var dojot = require("@dojot/flow-node");
+const path = require("path");
+const speech = require("@google-cloud/speech");
+const dojot = require("@dojot/flow-node");
 
 
 class DataHandler extends dojot.DataHandlerBase {
     constructor() {
         super();
+        this.streams = {};
     }
 
     /**
@@ -55,11 +57,65 @@ class DataHandler extends dojot.DataHandlerBase {
      */
     handleMessage(config, message, callback) {
         try {
+            // The audio sample to detect speecj
+            let audio = "";
+            switch (config.audioType) {
+                case "str":
+                    audio = config.audio;
+                    break;
+                case "msg":
+                    audio = this._get(config.audio, message);
+                    break;
+                default:
+                    return callback(new Error("Invalid audio type: " + config.audioType));
+            }
+
+            if (this.streams[config.name] === undefined) {
+                this.streams[config.name] = {stream: null, responses: []};
+                const client = new speech.SpeechClient({
+                    credentials: {
+                        client_email: config._credentials_client_email,
+                        private_key: config._credentials_private_key
+                    },
+                    projectId: config._credentials_project_id
+                });
+
+                const request = {
+                    "audio": {
+                        content: audio,
+                    },
+                    "config": {
+                        encoding: config.audioEncoding,
+                        sampleRateHertz: parseInt(config.sampleRate),
+                        languageCode: config.languageCode,
+                    },
+                    "interimResults": false
+                };
+
+                this.streams[config.name].stream = client.streamingRecognize(request).on("data", response => {
+                    // enqueues the response
+                    this.streams[config.name].responses.push(response);
+                }).on("error", err => {
+                    delete this.streams[config.name];
+                    return callback(err);
+                });
+            }
+
+            this.streams[config.name].stream.write(request);
+
+            if (this.streams[config.name].responses.length > 0) {
+                // dequeues the response
+                let response = this.streams[config.name].responses.shift();
+                this._set(config.response, response, message);
+            }
+
             return callback(undefined, [message]);
+
         } catch (err) {
+            delete this.streams[config.name];
             return callback(err);
         }
     }
 }
-var main = new dojot.DojotHandler(new DataHandler());
+const main = new dojot.DojotHandler(new DataHandler());
 main.init();

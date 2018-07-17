@@ -3,13 +3,63 @@
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name">
     </div>
+    <div class="form-row">
+        <label for="node-input-credentials"><i class="fa fa-cube"></i> <span>Credentials</span></label>
+        <input type="file" id="node-input-credentials">
+    </div>
+    <div class="form-row">
+        <label for="node-input-audio"><i class="fa fa-quote-left"></i> <span>Audio sample</span></label>
+        <input type="text" id="node-input-audio" placeholder="payload" style="width:250px;">
+        <input type="hidden" id="node-input-audioType">
+    </div>
+    <div class="form-row">
+        <label for="node-input-languageCode"><i class="fa fa-tasks"></i> Language</label>
+        <select type="text" id="node-input-languageCode" style="width:70%;">
+            <option value="en">English</option>
+            <option value="pt">Portuguese</option>
+            <option value="es">Spanish</option>
+            <option value="it">Italian</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-audioEncoding"><i class="fa fa-tasks"></i> Audio format</label>
+        <select type="text" id="node-input-audioEncoding" style="width:70%;">
+            <option value="LINEAR16">WAV Linear PCM</option>
+            <option value="MP3">MP3</option>
+            <option value="OGG_OPUS">Ogg Opus</option>
+        </select>
+    </div>
+    <div class="form-row">
+        <label for="node-input-sampleRate"><i class="fa fa-cube"></i> Sample rate (Hz)</label>
+        <input type="text" id="node-input-sampleRate">
+    </div>
+    <div class="form-row">
+        <label for="node-input-response"><i class="fa fa-edit"></i> <span>Response to</span></label>
+        <input type="text" id="node-input-response" placeholder="payload" style="width:250px;">
+        <input type="hidden" id="node-input-responseType">
+    </div>
 </script>
 
 <script type="text/javascript">
     RED.nodes.registerType("speech-to-text", {
         category: "google",
         defaults: {
-            name: { value: "", required: false }
+            name: { value: "", required: false },
+            credentials: { value: "" },
+            audio: { value: "payload", validate: RED.validators.typedInput("audioType") },
+            audioType: { value: "msg" },
+            languageCode: { value: "pt" },
+            audioEncoding: { value: "LINEAR16" },
+            sampleRate: { value: "16000" },
+            response: { value: "payload" },
+            responseType: { value: "msg" },
+
+            //
+            _credentials_client_email: { value: "" },
+            _credentials_private_key: { value: "" },
+            _credentials_project_id: { value: "" }
         },
         inputs: 1,
         outputs: 1,
@@ -22,7 +72,41 @@
         labelStyle: function() {
             return this.name ? "node_label_italic" : "";
         },
-        oneditprepare: function() {},
-        oneditsave: function() {}
+        oneditprepare: function() {
+            $("#node-input-audio").typedInput({
+                default: "msg",
+                types: ["msg", "str"],
+                typeField: $("#node-input-audioType")
+            });
+
+            $("#node-input-response").typedInput({
+                default: "msg",
+                types: ["msg", "str"],
+                typeField: $("#node-input-responseType")
+            });
+        },
+        oneditsave: function() {
+            if (typeof window.FileReader !== "function") {
+                console.error("The file API isn't supported on this browser yet.");
+                return;
+            }
+
+            var files = $("#node-input-credentials").prop("files");
+
+            if (files && files[0]) {
+                var file = files[0];
+                fr = new FileReader();
+                fr.onload = () => {
+                    var credentialsData = JSON.parse(fr.result);
+                    $("#node-input-_credentials_client_email").val(credentialsData.client_email);
+                    this._credentials_client_email = credentialsData.client_email;
+                    $("#node-input-_credentials_private_key").val(credentialsData.private_key);
+                    this._credentials_private_key = credentialsData.private_key;
+                    $("#node-input-_credentials_project_id").val(credentialsData.project_id);
+                    this._credentials_project_id = credentialsData.project_id;
+                }
+                fr.readAsText(file);
+            }
+        }
     });
 </script>
